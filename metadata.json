@@ -1,0 +1,6 @@
+{
+  "name": "Fabric Mart",
+  "description": "Industrial B2B Textile & Fabric Marketplace Platform connecting buyers and verified suppliers with voice AI sourcing, inventory management, and order workflows.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
