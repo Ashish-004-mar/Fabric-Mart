@@ -694,7 +694,7 @@ export const MarketplacePage: React.FC<MarketplacePageProps> = ({
                       <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
                         <div>
                           <p className="text-sm font-extrabold text-blue-600 dark:text-blue-400">
-                            ${prod.pricePerMeter.toFixed(2)}
+                            ${Number(prod.pricePerMeter ?? 0).toFixed(2)}
                             <span className="text-[10px] font-normal text-slate-400">/m</span>
                           </p>
                           <p className="text-[10px] text-slate-400">MOQ: {prod.moq}m</p>

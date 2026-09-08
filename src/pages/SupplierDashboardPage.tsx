@@ -248,7 +248,7 @@ export const SupplierDashboardPage: React.FC = () => {
                 {supplierProfile && (
                   <span className="bg-amber-50 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-amber-200 dark:border-amber-800 flex items-center gap-1">
                     <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                    <span>{supplierProfile.rating.toFixed(1)} / 5.0</span>
+                    <span>{Number(supplierProfile.rating ?? 4.9).toFixed(1)} / 5.0</span>
                     <span className="text-slate-400 font-normal">({supplierProfile.reviewsCount || 142} audits)</span>
                   </span>
                 )}
@@ -356,7 +356,7 @@ export const SupplierDashboardPage: React.FC = () => {
             <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
             <span>Reputation & Buyer Ratings</span>
             <span className="bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 text-[10px] px-2 py-0.2 rounded-full font-extrabold">
-              {supplierProfile?.rating.toFixed(1) || '4.9'} ★
+              {Number(supplierProfile?.rating ?? 4.9).toFixed(1)} ★
             </span>
           </button>
           <button
@@ -465,7 +465,7 @@ export const SupplierDashboardPage: React.FC = () => {
                           <span className="text-[10px] font-mono font-semibold text-slate-400">{prod.sku}</span>
                           <h4 className="font-bold text-xs text-slate-900 dark:text-white truncate">{prod.name}</h4>
                           <p className="text-[10px] text-slate-500">{prod.composition}</p>
-                          <p className="text-xs font-black text-blue-600">${prod.pricePerMeter.toFixed(2)}/m</p>
+                          <p className="text-xs font-black text-blue-600">${Number(prod.pricePerMeter ?? 0).toFixed(2)}/m</p>
                         </div>
                       </div>
 
@@ -561,7 +561,7 @@ export const SupplierDashboardPage: React.FC = () => {
                             </div>
                           </div>
                         </td>
-                        <td className="p-3.5 font-extrabold text-blue-600">${prod.pricePerMeter.toFixed(2)}/m</td>
+                        <td className="p-3.5 font-extrabold text-blue-600">${Number(prod.pricePerMeter ?? 0).toFixed(2)}/m</td>
                         <td className="p-3.5 text-right space-x-2">
                           <button
                             onClick={() => handleRestockProduct(prod, 500)}
@@ -675,7 +675,7 @@ export const SupplierDashboardPage: React.FC = () => {
                           <span className="text-slate-800 dark:text-slate-200">{ord.buyerName}</span>
                           <span className="text-slate-400">({ord.shippingAddress.companyName})</span>
                         </div>
-                        <span className="text-emerald-600 font-extrabold text-sm">${ord.grandTotal.toFixed(2)}</span>
+                        <span className="text-emerald-600 font-extrabold text-sm">${Number(ord.grandTotal ?? 0).toFixed(2)}</span>
                       </div>
 
                       <div className="text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
@@ -849,7 +849,7 @@ export const SupplierDashboardPage: React.FC = () => {
                   <div className="flex items-center gap-5">
                     <div className="text-center p-3 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
                       <span className="text-4xl font-black text-slate-900 dark:text-white block">
-                        {(supplierProfile?.rating || 4.9).toFixed(1)}
+                        {Number(supplierProfile?.rating ?? 4.9).toFixed(1)}
                       </span>
                       <span className="text-[10px] text-slate-400 font-bold uppercase">Score / 5.0</span>
                     </div>

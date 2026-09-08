@@ -17,6 +17,7 @@ export interface User {
   createdAt?: string;
   lastLoginAt?: string;
   buyerProfile?: BuyerProfile;
+  shippingAddress?: ShippingAddress;
 }
 
 export interface BuyerProfile {
@@ -169,6 +170,7 @@ export interface Product {
   applicationTags?: string[]; // e.g. ['Shirts', 'Dresses', 'Upholstery', 'Activewear']
   tags: string[]; // e.g. ['Organic', 'GOTS', 'Low Carbon', 'Recycled']
   images: string[];
+  imageUrl?: string;
   galleryImages?: FabricImage[];
   certifications: string[];
   careInstructions?: string;

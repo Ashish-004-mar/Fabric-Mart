@@ -43,7 +43,7 @@ export const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({
   const activeColorIndex = product.colors.findIndex((c) => c.name === selectedColor);
   const selectedColorObj = product.colors[activeColorIndex >= 0 ? activeColorIndex : 0];
   const variantPriceMultiplier = (selectedColorObj as any)?.priceMultiplier || (1 + (Math.max(0, activeColorIndex) % 3) * 0.05);
-  const currentUnitPrice = (selectedColorObj as any)?.pricePerMeter || Number((product.pricePerMeter * (activeColorIndex === 0 ? 1 : variantPriceMultiplier)).toFixed(2));
+  const currentUnitPrice = (selectedColorObj as any)?.pricePerMeter || Number((Number(product.pricePerMeter ?? 0) * (activeColorIndex === 0 ? 1 : variantPriceMultiplier)).toFixed(2));
 
   useEffect(() => {
     if (product) {
@@ -376,7 +376,7 @@ export const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({
                 {supplierProfile && (
                   <span className="bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800 text-[11px] font-bold flex items-center gap-1">
                     <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                    <span>{supplierProfile.rating.toFixed(1)}</span>
+                    <span>{Number(supplierProfile.rating ?? 4.8).toFixed(1)}</span>
                     <span className="text-amber-600/80 dark:text-amber-400/80 font-normal">({supplierProfile.reviewsCount || 142})</span>
                   </span>
                 )}
@@ -393,7 +393,7 @@ export const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({
             <div className="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700/80 flex items-center justify-between">
               <div>
                 <p className="text-2xl font-black text-blue-600 dark:text-blue-400 flex items-baseline gap-2">
-                  <span>${currentUnitPrice.toFixed(2)}</span>
+                  <span>${Number(currentUnitPrice ?? 0).toFixed(2)}</span>
                   <span className="text-xs font-medium text-slate-500 dark:text-slate-400"> / meter</span>
                   {activeColorIndex > 0 && (
                     <span className="text-[10px] bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full font-bold">
@@ -462,7 +462,7 @@ export const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({
 
                 <div className="flex-1 pt-5">
                   <p className="text-xs text-right font-bold text-slate-800 dark:text-slate-200">
-                    Est. Subtotal: <span className="text-blue-600 text-sm">${(currentUnitPrice * quantityMeters).toFixed(2)}</span>
+                    Est. Subtotal: <span className="text-blue-600 text-sm">${Number((currentUnitPrice ?? 0) * (quantityMeters ?? 0)).toFixed(2)}</span>
                   </p>
                 </div>
               </div>
@@ -706,7 +706,7 @@ export const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({
                 <div className="flex items-center gap-4">
                   <div className="text-center">
                     <span className="text-4xl font-black text-slate-900 dark:text-white">
-                      {supplierProfile.rating.toFixed(1)}
+                      {Number(supplierProfile.rating ?? 4.8).toFixed(1)}
                     </span>
                     <p className="text-[10px] text-slate-400 font-medium">out of 5.0</p>
                   </div>

@@ -25,10 +25,32 @@ export const BuyerDashboardPage: React.FC<{
   // Settings & Avatar State
   const [brandName, setBrandName] = useState(user?.companyName || '');
   const [userName, setUserName] = useState(user?.name || '');
+  const [phone, setPhone] = useState(user?.phone || user?.shippingAddress?.phone || '');
+  const [addressLine1, setAddressLine1] = useState(user?.shippingAddress?.addressLine1 || '');
+  const [addressLine2, setAddressLine2] = useState(user?.shippingAddress?.addressLine2 || '');
+  const [city, setCity] = useState(user?.shippingAddress?.city || '');
+  const [state, setState] = useState(user?.shippingAddress?.state || '');
+  const [postalCode, setPostalCode] = useState(user?.shippingAddress?.postalCode || '');
+  const [country, setCountry] = useState(user?.shippingAddress?.country || 'United States');
   const [avatarPreview, setAvatarPreview] = useState(user?.avatar || '');
   const [saveSuccessMsg, setSaveSuccessMsg] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      setBrandName(user.companyName || '');
+      setUserName(user.name || '');
+      setPhone(user.phone || user.shippingAddress?.phone || '');
+      setAddressLine1(user.shippingAddress?.addressLine1 || '');
+      setAddressLine2(user.shippingAddress?.addressLine2 || '');
+      setCity(user.shippingAddress?.city || '');
+      setState(user.shippingAddress?.state || '');
+      setPostalCode(user.shippingAddress?.postalCode || '');
+      setCountry(user.shippingAddress?.country || 'United States');
+      setAvatarPreview(user.avatar || '');
+    }
+  }, [user]);
 
   const presetLogos = [
     { label: 'Sarah Jenkins', url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300' },
@@ -55,7 +77,19 @@ export const BuyerDashboardPage: React.FC<{
     updateUser({
       name: userName,
       companyName: brandName,
+      phone,
       avatar: avatarPreview || user?.avatar,
+      shippingAddress: {
+        companyName: brandName || user?.companyName || 'My Company',
+        contactPerson: userName || user?.name || 'Buyer',
+        phone,
+        addressLine1,
+        addressLine2,
+        city,
+        state,
+        postalCode,
+        country,
+      },
     });
     setSaveSuccessMsg(true);
     setTimeout(() => setSaveSuccessMsg(false), 3000);
@@ -392,7 +426,7 @@ export const BuyerDashboardPage: React.FC<{
                               </div>
                             </div>
                             <span className="font-semibold text-slate-800 dark:text-slate-200">
-                              {item.quantityMeters}m @ ${item.pricePerMeter}/m (${item.totalPrice.toFixed(2)})
+                              {item.quantityMeters}m @ ${item.pricePerMeter}/m (${Number(item.totalPrice ?? ((item.quantityMeters || 0) * (item.pricePerMeter || 0))).toFixed(2)})
                             </span>
                           </div>
                         ))}
@@ -407,7 +441,7 @@ export const BuyerDashboardPage: React.FC<{
                         <span className="text-slate-500">Shipping to: {ord.shippingAddress.companyName}, {ord.shippingAddress.city}</span>
                         <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
                           <span className="font-extrabold text-slate-900 dark:text-white text-sm">
-                            Grand Total: <span className="text-blue-600">${ord.grandTotal.toFixed(2)}</span>
+                            Grand Total: <span className="text-blue-600">${Number(ord.grandTotal ?? 0).toFixed(2)}</span>
                           </span>
 
                           <button
@@ -547,8 +581,8 @@ export const BuyerDashboardPage: React.FC<{
                 </div>
               </div>
 
-              {/* Name & Company Input */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Name, Phone & Company Input */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     Buyer Representative Name
@@ -577,6 +611,127 @@ export const BuyerDashboardPage: React.FC<{
                     placeholder="e.g. Atelier Modern Fashions"
                     className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs font-semibold text-slate-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Contact Phone Number
+                  </label>
+                  <input
+                    type="tel"
+                    disabled={!user}
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="e.g. +1 555-0199"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs font-semibold text-slate-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                </div>
+              </div>
+
+              {/* DEFAULT SHIPPING & MILL DELIVERY ADDRESS */}
+              <div className="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-4">
+                <div className="flex items-center gap-2">
+                  <Truck className="w-4 h-4 text-blue-600" />
+                  <h4 className="text-xs font-extrabold text-slate-900 dark:text-white uppercase tracking-wider">
+                    Default Shipping Address & Mill Delivery Details
+                  </h4>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  This shipping address will pre-fill automatically when placing new fabric orders and checkout.
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Address Line 1 (Street Address, Warehouse, or Cutting Facility)
+                    </label>
+                    <input
+                      type="text"
+                      disabled={!user}
+                      value={addressLine1}
+                      onChange={(e) => setAddressLine1(e.target.value)}
+                      placeholder="e.g. 742 Fashion Boulevard, Suite 400"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs font-semibold text-slate-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Address Line 2 (Suite / Floor / Loading Dock)
+                    </label>
+                    <input
+                      type="text"
+                      disabled={!user}
+                      value={addressLine2}
+                      onChange={(e) => setAddressLine2(e.target.value)}
+                      placeholder="e.g. Building B, Dock 4"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs font-semibold text-slate-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      City
+                    </label>
+                    <input
+                      type="text"
+                      disabled={!user}
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      placeholder="e.g. New York"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs font-semibold text-slate-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      State / Province
+                    </label>
+                    <input
+                      type="text"
+                      disabled={!user}
+                      value={state}
+                      onChange={(e) => setState(e.target.value)}
+                      placeholder="e.g. NY"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs font-semibold text-slate-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Postal / ZIP Code
+                    </label>
+                    <input
+                      type="text"
+                      disabled={!user}
+                      value={postalCode}
+                      onChange={(e) => setPostalCode(e.target.value)}
+                      placeholder="e.g. 10018"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs font-semibold text-slate-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Country
+                    </label>
+                    <select
+                      disabled={!user}
+                      value={country}
+                      onChange={(e) => setCountry(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs font-semibold text-slate-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <option value="United States">United States</option>
+                      <option value="Canada">Canada</option>
+                      <option value="United Kingdom">United Kingdom</option>
+                      <option value="Italy">Italy</option>
+                      <option value="France">France</option>
+                      <option value="Germany">Germany</option>
+                      <option value="India">India</option>
+                      <option value="Japan">Japan</option>
+                      <option value="Australia">Australia</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 

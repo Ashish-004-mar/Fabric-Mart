@@ -13,14 +13,15 @@ export const CheckoutPage: React.FC<{ onOrderPlaced: (order: Order) => void }> =
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form State initialized from current logged in user
-  const [companyName, setCompanyName] = useState(user?.companyName || '');
-  const [contactPerson, setContactPerson] = useState(user?.name || '');
-  const [phone, setPhone] = useState(user?.phone || '');
-  const [addressLine1, setAddressLine1] = useState('');
-  const [city, setCity] = useState('');
-  const [state, setState] = useState('');
-  const [postalCode, setPostalCode] = useState('');
-  const [country, setCountry] = useState('United States');
+  const [companyName, setCompanyName] = useState(user?.companyName || user?.shippingAddress?.companyName || '');
+  const [contactPerson, setContactPerson] = useState(user?.name || user?.shippingAddress?.contactPerson || '');
+  const [phone, setPhone] = useState(user?.phone || user?.shippingAddress?.phone || '');
+  const [addressLine1, setAddressLine1] = useState(user?.shippingAddress?.addressLine1 || '');
+  const [addressLine2, setAddressLine2] = useState(user?.shippingAddress?.addressLine2 || '');
+  const [city, setCity] = useState(user?.shippingAddress?.city || '');
+  const [state, setState] = useState(user?.shippingAddress?.state || '');
+  const [postalCode, setPostalCode] = useState(user?.shippingAddress?.postalCode || '');
+  const [country, setCountry] = useState(user?.shippingAddress?.country || 'United States');
   const [paymentMethod, setPaymentMethod] = useState<'escrow_card' | 'bank_wire' | 'b2b_terms'>('escrow_card');
 
   const estimatedShipping = subtotal > 0 ? 120 : 0;
@@ -44,6 +45,7 @@ export const CheckoutPage: React.FC<{ onOrderPlaced: (order: Order) => void }> =
             contactPerson: contactPerson || user?.name || 'Buyer',
             phone,
             addressLine1,
+            addressLine2,
             city,
             state,
             postalCode,
@@ -118,11 +120,32 @@ export const CheckoutPage: React.FC<{ onOrderPlaced: (order: Order) => void }> =
                 />
               </div>
               <div className="sm:col-span-2">
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Street Address</label>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Contact Phone Number</label>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="e.g. +1 555-0199"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Street Address (Address Line 1)</label>
                 <input
                   type="text"
                   value={addressLine1}
                   onChange={(e) => setAddressLine1(e.target.value)}
+                  placeholder="e.g. 742 Fashion Boulevard"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Address Line 2 (Suite / Floor / Dock)</label>
+                <input
+                  type="text"
+                  value={addressLine2}
+                  onChange={(e) => setAddressLine2(e.target.value)}
+                  placeholder="e.g. Building B, Dock 4"
                   className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5"
                 />
               </div>
@@ -136,11 +159,30 @@ export const CheckoutPage: React.FC<{ onOrderPlaced: (order: Order) => void }> =
                 />
               </div>
               <div>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">State / Province</label>
+                <input
+                  type="text"
+                  value={state}
+                  onChange={(e) => setState(e.target.value)}
+                  placeholder="e.g. NY"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5"
+                />
+              </div>
+              <div>
                 <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Postal / Zip Code</label>
                 <input
                   type="text"
                   value={postalCode}
                   onChange={(e) => setPostalCode(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5"
+                />
+              </div>
+              <div>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Country</label>
+                <input
+                  type="text"
+                  value={country}
+                  onChange={(e) => setCountry(e.target.value)}
                   className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5"
                 />
               </div>
@@ -176,19 +218,19 @@ export const CheckoutPage: React.FC<{ onOrderPlaced: (order: Order) => void }> =
                     </div>
                   </div>
                   <span className="font-extrabold text-slate-900 dark:text-white text-sm">
-                    ${(item.unitPrice * item.quantityMeters).toFixed(2)}
+                    ${Number((item.unitPrice ?? 0) * (item.quantityMeters ?? 0)).toFixed(2)}
                   </span>
                 </div>
               ))}
             </div>
 
             <div className="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl text-xs space-y-2 border border-slate-200 dark:border-slate-700">
-              <div className="flex justify-between"><span>Subtotal:</span><span className="font-bold">${subtotal.toFixed(2)}</span></div>
-              <div className="flex justify-between"><span>Mill Air Freight Estimate:</span><span className="font-bold">${estimatedShipping.toFixed(2)}</span></div>
-              <div className="flex justify-between"><span>Est. Tax (8%):</span><span className="font-bold">${estimatedTax.toFixed(2)}</span></div>
+              <div className="flex justify-between"><span>Subtotal:</span><span className="font-bold">${Number(subtotal ?? 0).toFixed(2)}</span></div>
+              <div className="flex justify-between"><span>Mill Air Freight Estimate:</span><span className="font-bold">${Number(estimatedShipping ?? 0).toFixed(2)}</span></div>
+              <div className="flex justify-between"><span>Est. Tax (8%):</span><span className="font-bold">${Number(estimatedTax ?? 0).toFixed(2)}</span></div>
               <div className="flex justify-between text-sm font-black text-blue-600 pt-2 border-t border-slate-200 dark:border-slate-700">
                 <span>Grand Total:</span>
-                <span>${grandTotal.toFixed(2)}</span>
+                <span>${Number(grandTotal ?? 0).toFixed(2)}</span>
               </div>
             </div>
 
@@ -244,7 +286,7 @@ export const CheckoutPage: React.FC<{ onOrderPlaced: (order: Order) => void }> =
               className="w-full bg-blue-600 text-white font-extrabold py-4 rounded-xl hover:bg-blue-700 text-sm flex items-center justify-center gap-2 shadow-lg"
             >
               <ShieldCheck className="w-5 h-5" />
-              <span>{isSubmitting ? 'Processing Order...' : `Confirm Order & Deposit $${grandTotal.toFixed(2)} in Escrow`}</span>
+              <span>{isSubmitting ? 'Processing Order...' : `Confirm Order & Deposit $${Number(grandTotal ?? 0).toFixed(2)} in Escrow`}</span>
             </button>
           </div>
         )}
@@ -273,7 +315,7 @@ export const CheckoutPage: React.FC<{ onOrderPlaced: (order: Order) => void }> =
                 <span className="bg-blue-100 text-blue-800 font-bold px-2.5 py-0.5 rounded text-[10px]">STATUS: PENDING MILL DISPATCH</span>
               </div>
               <div className="grid grid-cols-2 gap-2 text-slate-600 dark:text-slate-300">
-                <p><strong>Grand Total:</strong> ${placedOrder.grandTotal.toFixed(2)}</p>
+                <p><strong>Grand Total:</strong> ${Number(placedOrder.grandTotal ?? 0).toFixed(2)}</p>
                 <p><strong>Items Count:</strong> {placedOrder.items.length} SKUs</p>
                 <p><strong>Delivery Address:</strong> {placedOrder.shippingAddress.addressLine1}, {placedOrder.shippingAddress.city}</p>
                 <p><strong>Escrow Status:</strong> Funds Deposited</p>

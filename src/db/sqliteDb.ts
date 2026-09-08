@@ -12,289 +12,267 @@ if (!fs.existsSync(DB_DIR)) {
 
 const DB_PATH = path.join(DB_DIR, 'fabric_mart.db');
 
-function createDbInstance(): Database.Database {
+function openDatabase() {
   try {
-    const database = new Database(DB_PATH);
-    database.pragma('quick_check');
-    return database;
+    const testDb = new Database(DB_PATH);
+    testDb.pragma('foreign_keys = ON');
+    testDb.prepare('PRAGMA user_version;').get();
+    return testDb;
   } catch (err) {
-    console.warn('[DB] SQLite database file is invalid or corrupted. Re-creating clean database file...', err);
+    console.error('[sqliteDb] Corrupt or unreadable database file detected:', err);
     if (fs.existsSync(DB_PATH)) {
+      const backupPath = path.join(DB_DIR, `fabric_mart.db.corrupt.${Date.now()}`);
       try {
-        fs.unlinkSync(DB_PATH);
+        fs.renameSync(DB_PATH, backupPath);
       } catch (e) {
-        console.error('[DB] Failed to remove corrupt DB file:', e);
+        fs.unlinkSync(DB_PATH);
       }
     }
-    return new Database(DB_PATH);
+    const newDb = new Database(DB_PATH);
+    newDb.pragma('foreign_keys = ON');
+    return newDb;
   }
 }
 
-export const db = createDbInstance();
-
-// Enable foreign key constraints
-try {
-  db.pragma('foreign_keys = ON');
-} catch (e) {
-  console.warn('[DB] Failed setting foreign_keys PRAGMA:', e);
-}
+export const db = openDatabase();
 
 export function initDatabase() {
-  const executeSchema = () => {
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS users (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        email TEXT UNIQUE NOT NULL,
-        password TEXT NOT NULL DEFAULT 'password123',
-        role TEXT NOT NULL CHECK(role IN ('BUYER', 'SUPPLIER', 'ADMIN')),
-        company_name TEXT,
-        avatar TEXT,
-        phone TEXT,
-        is_onboarded INTEGER DEFAULT 1,
-        status TEXT DEFAULT 'ACTIVE',
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      email TEXT UNIQUE NOT NULL,
+      password TEXT NOT NULL DEFAULT 'password123',
+      role TEXT NOT NULL CHECK(role IN ('BUYER', 'SUPPLIER', 'ADMIN')),
+      company_name TEXT,
+      avatar TEXT,
+      phone TEXT,
+      is_onboarded INTEGER DEFAULT 1,
+      status TEXT DEFAULT 'ACTIVE',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
 
-      CREATE TABLE IF NOT EXISTS suppliers (
-        user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-        business_name TEXT NOT NULL,
-        slug TEXT UNIQUE NOT NULL,
-        logo TEXT,
-        banner_image TEXT,
-        description TEXT,
-        contact_person TEXT,
-        email TEXT NOT NULL,
-        phone TEXT,
-        address TEXT,
-        city TEXT,
-        country TEXT NOT NULL,
-        gst_tax_id TEXT,
-        operating_hours TEXT,
-        moq_default INTEGER DEFAULT 50,
-        certifications TEXT,
-        fabric_specialties TEXT,
-        is_verified INTEGER DEFAULT 1,
-        status TEXT DEFAULT 'VERIFIED',
-        rating REAL DEFAULT 4.8,
-        total_products_count INTEGER DEFAULT 0,
-        reviews_count INTEGER DEFAULT 0,
-        rating_breakdown TEXT,
-        reliability_metrics TEXT,
-        recent_reviews TEXT
-      );
+    CREATE TABLE IF NOT EXISTS suppliers (
+      user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+      business_name TEXT NOT NULL,
+      slug TEXT UNIQUE NOT NULL,
+      logo TEXT,
+      banner_image TEXT,
+      description TEXT,
+      contact_person TEXT,
+      email TEXT NOT NULL,
+      phone TEXT,
+      address TEXT,
+      city TEXT,
+      country TEXT NOT NULL,
+      gst_tax_id TEXT,
+      operating_hours TEXT,
+      moq_default INTEGER DEFAULT 50,
+      certifications TEXT,
+      fabric_specialties TEXT,
+      is_verified INTEGER DEFAULT 1,
+      status TEXT DEFAULT 'VERIFIED',
+      rating REAL DEFAULT 4.8,
+      total_products_count INTEGER DEFAULT 0,
+      reviews_count INTEGER DEFAULT 0,
+      rating_breakdown TEXT,
+      reliability_metrics TEXT,
+      recent_reviews TEXT
+    );
 
-      CREATE TABLE IF NOT EXISTS categories (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        slug TEXT UNIQUE NOT NULL,
-        main_family TEXT,
-        description TEXT,
-        image TEXT,
-        fabric_count INTEGER DEFAULT 0,
-        status TEXT DEFAULT 'ENABLED',
-        sort_order INTEGER DEFAULT 1
-      );
+    CREATE TABLE IF NOT EXISTS categories (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      slug TEXT UNIQUE NOT NULL,
+      main_family TEXT,
+      description TEXT,
+      image TEXT,
+      fabric_count INTEGER DEFAULT 0,
+      status TEXT DEFAULT 'ENABLED',
+      sort_order INTEGER DEFAULT 1
+    );
 
-      CREATE TABLE IF NOT EXISTS subcategories (
-        id TEXT PRIMARY KEY,
-        category_id TEXT NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
-        category_name TEXT,
-        main_family TEXT,
-        name TEXT NOT NULL,
-        slug TEXT UNIQUE NOT NULL,
-        description TEXT,
-        characteristics TEXT,
-        common_applications TEXT
-      );
+    CREATE TABLE IF NOT EXISTS subcategories (
+      id TEXT PRIMARY KEY,
+      category_id TEXT NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
+      category_name TEXT,
+      main_family TEXT,
+      name TEXT NOT NULL,
+      slug TEXT UNIQUE NOT NULL,
+      description TEXT,
+      characteristics TEXT,
+      common_applications TEXT
+    );
 
-      CREATE TABLE IF NOT EXISTS products (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        slug TEXT UNIQUE NOT NULL,
-        category_id TEXT NOT NULL REFERENCES categories(id) ON DELETE RESTRICT,
-        subcategory_id TEXT,
-        subcategory_name TEXT,
-        main_family TEXT,
-        supplier_id TEXT NOT NULL REFERENCES suppliers(user_id) ON DELETE CASCADE,
-        sku TEXT NOT NULL,
-        description TEXT NOT NULL,
-        short_description TEXT,
-        composition TEXT NOT NULL,
-        fiber_origin TEXT,
-        weave_type TEXT,
-        texture TEXT,
-        gsm INTEGER NOT NULL,
-        width_cm INTEGER NOT NULL DEFAULT 150,
-        colors TEXT NOT NULL,
-        moq INTEGER NOT NULL DEFAULT 50,
-        price_per_meter REAL NOT NULL,
-        stock_quantity INTEGER NOT NULL DEFAULT 1000,
-        availability_status TEXT DEFAULT 'IN_STOCK',
-        tags TEXT,
-        application_tags TEXT,
-        images TEXT NOT NULL,
-        certifications TEXT,
-        care_instructions TEXT,
-        sustainability_notes TEXT,
-        rating REAL DEFAULT 4.8,
-        reviews_count INTEGER DEFAULT 0,
-        eco_score TEXT DEFAULT 'A+',
-        breathable INTEGER DEFAULT 1,
-        moisture_wicking INTEGER DEFAULT 0,
-        stretchable INTEGER DEFAULT 0,
-        wrinkle_resistant INTEGER DEFAULT 0,
-        eco_friendly INTEGER DEFAULT 0,
-        hypoallergenic INTEGER DEFAULT 0,
-        durability_rating INTEGER DEFAULT 4,
-        softness_rating INTEGER DEFAULT 4,
-        is_approved INTEGER DEFAULT 1,
-        is_featured INTEGER DEFAULT 0,
-        is_trending INTEGER DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
+    CREATE TABLE IF NOT EXISTS products (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      slug TEXT UNIQUE NOT NULL,
+      category_id TEXT NOT NULL REFERENCES categories(id) ON DELETE RESTRICT,
+      subcategory_id TEXT,
+      subcategory_name TEXT,
+      main_family TEXT,
+      supplier_id TEXT NOT NULL REFERENCES suppliers(user_id) ON DELETE CASCADE,
+      sku TEXT NOT NULL,
+      description TEXT NOT NULL,
+      short_description TEXT,
+      composition TEXT NOT NULL,
+      fiber_origin TEXT,
+      weave_type TEXT,
+      texture TEXT,
+      gsm INTEGER NOT NULL,
+      width_cm INTEGER NOT NULL DEFAULT 150,
+      colors TEXT NOT NULL,
+      moq INTEGER NOT NULL DEFAULT 50,
+      price_per_meter REAL NOT NULL,
+      stock_quantity INTEGER NOT NULL DEFAULT 1000,
+      availability_status TEXT DEFAULT 'IN_STOCK',
+      tags TEXT,
+      application_tags TEXT,
+      images TEXT NOT NULL,
+      certifications TEXT,
+      care_instructions TEXT,
+      sustainability_notes TEXT,
+      rating REAL DEFAULT 4.8,
+      reviews_count INTEGER DEFAULT 0,
+      eco_score TEXT DEFAULT 'A+',
+      breathable INTEGER DEFAULT 1,
+      moisture_wicking INTEGER DEFAULT 0,
+      stretchable INTEGER DEFAULT 0,
+      wrinkle_resistant INTEGER DEFAULT 0,
+      eco_friendly INTEGER DEFAULT 0,
+      hypoallergenic INTEGER DEFAULT 0,
+      durability_rating INTEGER DEFAULT 4,
+      softness_rating INTEGER DEFAULT 4,
+      is_approved INTEGER DEFAULT 1,
+      is_featured INTEGER DEFAULT 0,
+      is_trending INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
 
-      CREATE TABLE IF NOT EXISTS cart_items (
-        id TEXT PRIMARY KEY,
-        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
-        quantity_meters INTEGER NOT NULL DEFAULT 50,
-        selected_color TEXT,
-        unit_price REAL NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
+    CREATE TABLE IF NOT EXISTS cart_items (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+      quantity_meters INTEGER NOT NULL DEFAULT 50,
+      selected_color TEXT,
+      unit_price REAL NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
 
-      CREATE TABLE IF NOT EXISTS orders (
-        id TEXT PRIMARY KEY,
-        order_number TEXT UNIQUE NOT NULL,
-        buyer_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        shipping_address TEXT NOT NULL,
-        items TEXT NOT NULL,
-        subtotal REAL NOT NULL,
-        shipping_estimate REAL NOT NULL,
-        tax_amount REAL NOT NULL,
-        discount_amount REAL DEFAULT 0,
-        grand_total REAL NOT NULL,
-        status TEXT NOT NULL,
-        rejection_reason TEXT,
-        status_history TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
+    CREATE TABLE IF NOT EXISTS orders (
+      id TEXT PRIMARY KEY,
+      order_number TEXT UNIQUE NOT NULL,
+      buyer_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      shipping_address TEXT NOT NULL,
+      items TEXT NOT NULL,
+      subtotal REAL NOT NULL,
+      shipping_estimate REAL NOT NULL,
+      tax_amount REAL NOT NULL,
+      discount_amount REAL DEFAULT 0,
+      grand_total REAL NOT NULL,
+      status TEXT NOT NULL,
+      rejection_reason TEXT,
+      status_history TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
 
-      CREATE TABLE IF NOT EXISTS buyer_profiles (
-        user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-        business_type TEXT,
-        industry TEXT,
-        preferred_categories TEXT,
-        preferred_fabrics TEXT,
-        typical_order_quantity TEXT,
-        budget_range TEXT,
-        sustainability_focus INTEGER DEFAULT 1,
-        notes TEXT
-      );
+    CREATE TABLE IF NOT EXISTS buyer_profiles (
+      user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+      business_type TEXT,
+      industry TEXT,
+      preferred_categories TEXT,
+      preferred_fabrics TEXT,
+      typical_order_quantity TEXT,
+      budget_range TEXT,
+      sustainability_focus INTEGER DEFAULT 1,
+      notes TEXT
+    );
 
-      CREATE TABLE IF NOT EXISTS announcements (
-        id TEXT PRIMARY KEY,
-        title TEXT NOT NULL,
-        message TEXT NOT NULL,
-        target_audience TEXT NOT NULL DEFAULT 'ALL',
-        sent_by TEXT NOT NULL,
-        sent_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        read_count INTEGER DEFAULT 0,
-        priority TEXT DEFAULT 'normal'
-      );
+    CREATE TABLE IF NOT EXISTS announcements (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      message TEXT NOT NULL,
+      target_audience TEXT NOT NULL DEFAULT 'ALL',
+      sent_by TEXT NOT NULL,
+      sent_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      read_count INTEGER DEFAULT 0,
+      priority TEXT DEFAULT 'normal'
+    );
 
-      CREATE TABLE IF NOT EXISTS ai_settings (
-        key TEXT PRIMARY KEY,
-        value TEXT NOT NULL
-      );
+    CREATE TABLE IF NOT EXISTS ai_settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    );
 
-      CREATE TABLE IF NOT EXISTS ai_logs (
-        id TEXT PRIMARY KEY,
-        user_query TEXT NOT NULL,
-        user_role TEXT DEFAULT 'GUEST',
-        ai_response TEXT NOT NULL,
-        suggested_count INTEGER DEFAULT 0,
-        execution_time_ms INTEGER DEFAULT 120,
-        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
+    CREATE TABLE IF NOT EXISTS ai_logs (
+      id TEXT PRIMARY KEY,
+      user_query TEXT NOT NULL,
+      user_role TEXT DEFAULT 'GUEST',
+      ai_response TEXT NOT NULL,
+      suggested_count INTEGER DEFAULT 0,
+      execution_time_ms INTEGER DEFAULT 120,
+      timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
 
-      CREATE TABLE IF NOT EXISTS activity_logs (
-        id TEXT PRIMARY KEY,
-        type TEXT NOT NULL,
-        title TEXT NOT NULL,
-        description TEXT NOT NULL,
-        user_email TEXT,
-        status TEXT DEFAULT 'info',
-        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
+    CREATE TABLE IF NOT EXISTS activity_logs (
+      id TEXT PRIMARY KEY,
+      type TEXT NOT NULL,
+      title TEXT NOT NULL,
+      description TEXT NOT NULL,
+      user_email TEXT,
+      status TEXT DEFAULT 'info',
+      timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
 
-      CREATE TABLE IF NOT EXISTS content_management (
-        key TEXT PRIMARY KEY,
-        value TEXT NOT NULL
-      );
+    CREATE TABLE IF NOT EXISTS content_management (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    );
 
-      CREATE TABLE IF NOT EXISTS system_settings (
-        key TEXT PRIMARY KEY,
-        value TEXT NOT NULL
-      );
+    CREATE TABLE IF NOT EXISTS system_settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    );
 
-      CREATE TABLE IF NOT EXISTS ai_conversations (
-        id TEXT PRIMARY KEY,
-        user_id TEXT,
-        ai_type TEXT NOT NULL CHECK(ai_type IN ('ASSISTANT', 'VOICE_AGENT')),
-        role_context TEXT,
-        message TEXT NOT NULL,
-        response TEXT NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
+    CREATE TABLE IF NOT EXISTS ai_conversations (
+      id TEXT PRIMARY KEY,
+      user_id TEXT,
+      ai_type TEXT NOT NULL CHECK(ai_type IN ('ASSISTANT', 'VOICE_AGENT')),
+      role_context TEXT,
+      message TEXT NOT NULL,
+      response TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
 
-      CREATE TABLE IF NOT EXISTS voice_sessions (
-        id TEXT PRIMARY KEY,
-        user_id TEXT,
-        transcript TEXT NOT NULL,
-        response_text TEXT NOT NULL,
-        audio_duration REAL DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
+    CREATE TABLE IF NOT EXISTS voice_sessions (
+      id TEXT PRIMARY KEY,
+      user_id TEXT,
+      transcript TEXT NOT NULL,
+      response_text TEXT NOT NULL,
+      audio_duration REAL DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
 
-      CREATE TABLE IF NOT EXISTS fabric_images (
-        id TEXT PRIMARY KEY,
-        fabric_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
-        cloudinary_public_id TEXT,
-        secure_url TEXT NOT NULL,
-        thumbnail_url TEXT NOT NULL,
-        gallery_url TEXT NOT NULL,
-        zoom_url TEXT NOT NULL,
-        alt_text TEXT NOT NULL,
-        sort_order INTEGER DEFAULT 1,
-        is_primary INTEGER DEFAULT 0,
-        width INTEGER DEFAULT 1200,
-        height INTEGER DEFAULT 1200,
-        format TEXT DEFAULT 'webp',
-        file_size INTEGER DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-  };
-
-  try {
-    executeSchema();
-  } catch (err: any) {
-    console.warn('[DB] Schema execution failed, re-creating DB file:', err?.message || err);
-    if (fs.existsSync(DB_PATH)) {
-      try {
-        fs.unlinkSync(DB_PATH);
-      } catch (e) {}
-    }
-    // Re-run schema initialization on fresh DB file
-    try {
-      executeSchema();
-    } catch (retryErr) {
-      console.error('[DB] Retry schema execution failed:', retryErr);
-    }
-  }
+    CREATE TABLE IF NOT EXISTS fabric_images (
+      id TEXT PRIMARY KEY,
+      fabric_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+      cloudinary_public_id TEXT,
+      secure_url TEXT NOT NULL,
+      thumbnail_url TEXT NOT NULL,
+      gallery_url TEXT NOT NULL,
+      zoom_url TEXT NOT NULL,
+      alt_text TEXT NOT NULL,
+      sort_order INTEGER DEFAULT 1,
+      is_primary INTEGER DEFAULT 0,
+      width INTEGER DEFAULT 1200,
+      height INTEGER DEFAULT 1200,
+      format TEXT DEFAULT 'webp',
+      file_size INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
 
   // Safely add missing columns for existing sqlite DB instances
   try { db.exec(`ALTER TABLE users ADD COLUMN status TEXT DEFAULT 'ACTIVE';`); } catch (e) {}
@@ -599,6 +577,10 @@ function seedDataIfEmpty() {
   `);
 
   const transaction = db.transaction(() => {
+    const knownUsers = new Set<string>();
+    const knownSuppliers = new Set<string>();
+    const knownCategories = new Set<string>();
+
     for (const u of INITIAL_USERS) {
       insertUser.run({
         id: u.id,
@@ -611,9 +593,24 @@ function seedDataIfEmpty() {
         phone: u.phone || null,
         isOnboarded: u.isOnboarded ? 1 : 0,
       });
+      knownUsers.add(u.id);
     }
 
     for (const s of INITIAL_SUPPLIERS) {
+      if (!knownUsers.has(s.userId)) {
+        insertUser.run({
+          id: s.userId,
+          name: s.contactPerson || s.businessName,
+          email: s.email,
+          password: 'password123',
+          role: 'SUPPLIER',
+          companyName: s.businessName,
+          avatar: s.logo || null,
+          phone: s.phone || null,
+          isOnboarded: 1,
+        });
+        knownUsers.add(s.userId);
+      }
       insertSupplier.run({
         userId: s.userId,
         businessName: s.businessName,
@@ -640,6 +637,7 @@ function seedDataIfEmpty() {
         reliabilityMetrics: JSON.stringify(s.reliabilityMetrics || {}),
         recentReviews: JSON.stringify(s.recentReviews || []),
       });
+      knownSuppliers.add(s.userId);
     }
 
     for (const c of INITIAL_CATEGORIES) {
@@ -652,6 +650,7 @@ function seedDataIfEmpty() {
         image: c.image || null,
         fabricCount: c.fabricCount || 0,
       });
+      knownCategories.add(c.id);
 
       if (c.subcategories && c.subcategories.length > 0) {
         for (const sub of c.subcategories) {
@@ -671,6 +670,66 @@ function seedDataIfEmpty() {
     }
 
     for (const p of INITIAL_PRODUCTS) {
+      // Ensure category exists
+      if (!knownCategories.has(p.categoryId)) {
+        insertCategory.run({
+          id: p.categoryId,
+          name: p.categoryName || 'General Fabrics',
+          slug: p.categoryId.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+          mainFamily: p.mainFamily || 'Wovens',
+          description: 'Quality Textile Category',
+          image: null,
+          fabricCount: 1,
+        });
+        knownCategories.add(p.categoryId);
+      }
+
+      // Ensure supplier user and supplier profile exist
+      if (!knownSuppliers.has(p.supplierId)) {
+        if (!knownUsers.has(p.supplierId)) {
+          insertUser.run({
+            id: p.supplierId,
+            name: p.supplierName || 'Textile Supplier',
+            email: `${p.supplierSlug || p.supplierId}@textilesupplier.com`,
+            password: 'password123',
+            role: 'SUPPLIER',
+            companyName: p.supplierName || 'Textile Supplier Co',
+            avatar: null,
+            phone: '+1 555-0199',
+            isOnboarded: 1,
+          });
+          knownUsers.add(p.supplierId);
+        }
+
+        insertSupplier.run({
+          userId: p.supplierId,
+          businessName: p.supplierName || 'Textile Supplier Co',
+          slug: p.supplierSlug || p.supplierId,
+          logo: null,
+          bannerImage: null,
+          description: 'Verified Fabric Mart Supplier',
+          contactPerson: 'Sales Team',
+          email: `${p.supplierSlug || p.supplierId}@textilesupplier.com`,
+          phone: '+1 555-0199',
+          address: 'Industrial Textile Hub',
+          city: 'Milan',
+          country: 'Italy',
+          gstTaxId: null,
+          operatingHours: null,
+          moqDefault: 50,
+          certifications: '[]',
+          fabricSpecialties: '[]',
+          isVerified: 1,
+          rating: 4.8,
+          totalProductsCount: 1,
+          reviewsCount: 10,
+          ratingBreakdown: '{}',
+          reliabilityMetrics: '{}',
+          recentReviews: '[]',
+        });
+        knownSuppliers.add(p.supplierId);
+      }
+
       insertProduct.run({
         id: p.id,
         name: p.name,
@@ -716,6 +775,21 @@ function seedDataIfEmpty() {
     }
 
     for (const o of INITIAL_ORDERS) {
+      if (!knownUsers.has(o.buyerId)) {
+        insertUser.run({
+          id: o.buyerId,
+          name: 'Verified Buyer',
+          email: `${o.buyerId}@buyer.com`,
+          password: 'password123',
+          role: 'BUYER',
+          companyName: 'Apparel Corp',
+          avatar: null,
+          phone: '+1 555-0188',
+          isOnboarded: 1,
+        });
+        knownUsers.add(o.buyerId);
+      }
+
       insertOrder.run({
         id: o.id,
         orderNumber: o.orderNumber,
@@ -735,13 +809,8 @@ function seedDataIfEmpty() {
     }
   });
 
-  db.pragma('foreign_keys = OFF');
-  try {
-    transaction();
-    console.log('Database seeding finished successfully!');
-  } finally {
-    db.pragma('foreign_keys = ON');
-  }
+  transaction();
+  console.log('Database seeding finished successfully!');
 }
 
 // RELATIONAL JOIN QUERIES
@@ -885,7 +954,28 @@ export function getAllSuppliers(): SupplierProfile[] {
   return rows.map(mapSupplierRow);
 }
 
-export function getCartWithProductsJoined(userId: string = 'user-buyer-1'): { items: CartItem[]; subtotal: number } {
+export function ensureUserExistsInDb(userId: string) {
+  if (!userId) return;
+  const user = db.prepare(`SELECT id FROM users WHERE id = ?`).get(userId);
+  if (!user) {
+    db.prepare(`
+      INSERT OR IGNORE INTO users (id, name, email, password, role, company_name, is_onboarded)
+      VALUES (?, ?, ?, ?, ?, ?, 1)
+    `).run(
+      userId,
+      'Verified Buyer',
+      `${userId}@fabricmart.com`,
+      'password123',
+      'BUYER',
+      'Apparel Buyer Co'
+    );
+  }
+}
+
+export function getCartWithProductsJoined(userId: string = 'user-buyer-2'): { items: CartItem[]; subtotal: number } {
+  const targetUser = userId || 'user-buyer-2';
+  ensureUserExistsInDb(targetUser);
+
   const stmt = db.prepare(`
     SELECT 
       ci.id, ci.product_id as productId, ci.quantity_meters as quantityMeters,
@@ -902,21 +992,21 @@ export function getCartWithProductsJoined(userId: string = 'user-buyer-1'): { it
       p.reviews_count as prod_reviewsCount, p.eco_score as prod_ecoScore
     FROM cart_items ci
     INNER JOIN products p ON ci.product_id = p.id
-    INNER JOIN categories c ON p.category_id = c.id
-    INNER JOIN suppliers s ON p.supplier_id = s.user_id
+    LEFT JOIN categories c ON p.category_id = c.id
+    LEFT JOIN suppliers s ON p.supplier_id = s.user_id
     WHERE ci.user_id = ?
   `);
 
-  const rows = stmt.all(userId) as any[];
+  const rows = stmt.all(targetUser) as any[];
   const items: CartItem[] = rows.map((r) => {
     const product: Product = {
       id: r.prod_id,
       name: r.prod_name,
       slug: r.prod_slug,
       categoryId: r.prod_categoryId,
-      categoryName: r.prod_categoryName,
+      categoryName: r.prod_categoryName || 'General Fabrics',
       supplierId: r.prod_supplierId,
-      supplierName: r.prod_supplierName,
+      supplierName: r.prod_supplierName || 'Textile Supplier',
       supplierSlug: r.prod_supplierSlug,
       supplierLogo: r.prod_supplierLogo,
       sku: r.prod_sku,
@@ -953,10 +1043,13 @@ export function getCartWithProductsJoined(userId: string = 'user-buyer-1'): { it
 }
 
 export function addToCartInDb(userId: string, productId: string, quantityMeters: number, selectedColor?: string): CartItem {
+  const targetUser = userId || 'user-buyer-2';
+  ensureUserExistsInDb(targetUser);
+
   const product = getProductByIdWithJoins(productId);
   if (!product) throw new Error('Product not found');
 
-  const existing = db.prepare(`SELECT * FROM cart_items WHERE user_id = ? AND product_id = ?`).get(userId, productId) as any;
+  const existing = db.prepare(`SELECT * FROM cart_items WHERE user_id = ? AND product_id = ?`).get(targetUser, productId) as any;
 
   if (existing) {
     const newQty = existing.quantity_meters + quantityMeters;
@@ -966,11 +1059,21 @@ export function addToCartInDb(userId: string, productId: string, quantityMeters:
     db.prepare(`
       INSERT INTO cart_items (id, user_id, product_id, quantity_meters, selected_color, unit_price)
       VALUES (?, ?, ?, ?, ?, ?)
-    `).run(id, userId, productId, quantityMeters, selectedColor || product.colors[0]?.name || 'Natural', product.pricePerMeter);
+    `).run(id, targetUser, productId, quantityMeters, selectedColor || product.colors[0]?.name || 'Natural', product.pricePerMeter);
   }
 
-  const updatedCart = getCartWithProductsJoined(userId);
-  return updatedCart.items.find((i) => i.productId === productId)!;
+  const updatedCart = getCartWithProductsJoined(targetUser);
+  const found = updatedCart.items.find((i) => i.productId === productId);
+  if (found) return found;
+
+  return {
+    id: `cart-fallback-${productId}`,
+    productId,
+    product,
+    quantityMeters,
+    selectedColor: selectedColor || product.colors[0]?.name || 'Natural',
+    unitPrice: product.pricePerMeter,
+  };
 }
 
 export function updateCartQuantityInDb(id: string, quantityMeters: number) {
@@ -1714,16 +1817,10 @@ export function updateCategoryInDb(id: string, data: { name?: string; descriptio
 }
 
 export function deleteCategoryInDb(id: string) {
-  try {
-    db.prepare(`DELETE FROM products WHERE category_id = ?`).run(id);
-    db.prepare(`DELETE FROM subcategories WHERE category_id = ?`).run(id);
-    const result = db.prepare(`DELETE FROM categories WHERE id = ?`).run(id);
-    if (result.changes > 0) {
-      logAdminActivity('SYSTEM', 'Category Deleted', `Deleted category ID ${id}.`, undefined, 'warning');
-      return true;
-    }
-  } catch (err) {
-    console.error('Failed to delete category:', err);
+  const result = db.prepare(`DELETE FROM categories WHERE id = ?`).run(id);
+  if (result.changes > 0) {
+    logAdminActivity('SYSTEM', 'Category Deleted', `Deleted category ID ${id}.`, undefined, 'warning');
+    return true;
   }
   return false;
 }

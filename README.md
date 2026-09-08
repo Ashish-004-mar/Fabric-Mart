@@ -34,10 +34,19 @@ FabricMart is a next-generation B2B textile sourcing and fabric discovery platfo
 
 ## 🚀 Free Deployment Guide
 
+You can deploy FabricMart for **free** using any of the following popular cloud platforms:
 
-### Recommended Platform Render (Free Web Service)
+---
 
-Render supports free persistent Node.js web services running standard Express start scripts (`node dist/server.cjs`):
+### Option 1: AI Studio Built-in Deployment (Easiest & Free)
+
+1. **Deploy directly from the Editor**:
+   - Click the **Deploy** or **Share** button in the top-right corner of the AI Studio interface.
+   - Select Cloud Run deployment to publish a live, containerized web URL.
+
+---
+
+### Option 2: Vercel (Free Client-Side / Full-Stack Hosting)
 
 1. **Push your code to GitHub**:
    ```bash
@@ -47,17 +56,43 @@ Render supports free persistent Node.js web services running standard Express st
    git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
    git push -u origin main
    ```
-2. **Create a Free Web Service on Render**:
-   - Go to [render.com](https://render.com) and log in.
-   - Click **New +** > **Web Service** and connect your GitHub repository.
-3. **Configure Build & Start Commands**:
+2. **Import to Vercel**:
+   - Go to [vercel.com](https://vercel.com) and log in with your GitHub account.
+   - Click **Add New** > **Project** and select your repository.
+3. **Configure Environment Variables**:
+   - Under **Environment Variables**, add:
+     - `GEMINI_API_KEY`: *(Your Google AI Studio API key)*
+4. **Deploy**:
+   - Click **Deploy**. Vercel will automatically build and deploy your application with a free `.vercel.app` domain.
+
+---
+
+### Option 3: Netlify (Free Hosting)
+
+1. **Log in to Netlify**:
+   - Go to [netlify.com](https://netlify.com) and connect your GitHub account.
+2. **Add New Site**:
+   - Select **Import an existing project** from GitHub.
+3. **Build Settings**:
+   - **Build Command**: `npm run build`
+   - **Publish Directory**: `dist`
+4. **Environment Variables**:
+   - Add `GEMINI_API_KEY` in Netlify's Site Settings > Environment Variables.
+5. **Deploy**:
+   - Click **Deploy Site**.
+
+---
+
+### Option 4: Render (Free Web Service)
+
+1. Go to [render.com](https://render.com) and create a free account.
+2. Click **New +** > **Web Service** and connect your GitHub repository.
+3. Set the runtime parameters:
    - **Environment**: `Node`
    - **Build Command**: `npm run build`
    - **Start Command**: `npm run start`
-4. **Set Environment Variables**:
-   - Under **Environment Variables**, add:
-     HUGGING_FACE_API_KEY`: *(Your secret Hugging Face API key)*
-5. Click **Create Web Service**.
+4. In the **Environment Variables** section, add your secret key (`GEMINI_API_KEY`).
+5. Click **Create Web Service** to launch your free deployment.
 
 ---
 
@@ -77,7 +112,7 @@ Render supports free persistent Node.js web services running standard Express st
 3. **Configure Environment Variables**:
    Create a `.env` file in the root directory:
    ```env
-   HUGGING_FACE_API_KEY=your_hugging_face_api_key_here
+   GEMINI_API_KEY=your_gemini_api_key_here
    ```
 
 4. **Start the development server**:

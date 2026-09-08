@@ -45,7 +45,7 @@ export const Fabric3DViewer: React.FC<Fabric3DViewerProps> = ({
   const lightsGroupRef = useRef<THREE.Group | null>(null);
   const dirLightRef = useRef<THREE.DirectionalLight | null>(null);
   const animFrameRef = useRef<number | null>(null);
-  const clockRef = useRef<THREE.Clock>(new THREE.Clock());
+  const startTimeRef = useRef<number>(performance.now());
 
   // Mouse Orbit Control state
   const isDraggingRef = useRef(false);
@@ -286,7 +286,7 @@ export const Fabric3DViewer: React.FC<Fabric3DViewerProps> = ({
     const animate = () => {
       animFrameRef.current = requestAnimationFrame(animate);
 
-      const elapsedTime = clockRef.current.getElapsedTime();
+      const elapsedTime = (performance.now() - startTimeRef.current) * 0.001;
 
       // Smooth Orbit Lerp
       rotationRef.current.x += (targetRotationRef.current.x - rotationRef.current.x) * 0.08;

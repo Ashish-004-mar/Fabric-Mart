@@ -26,13 +26,14 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     // Sync with backend API
-    fetch('/api/cart')
+    const url = user?.id ? `/api/cart?userId=${encodeURIComponent(user.id)}` : '/api/cart';
+    fetch(url)
       .then((res) => res.json())
       .then((data) => {
         if (data.items) setCart(data.items);
       })
       .catch((err) => console.error('Error fetching cart:', err));
-  }, []);
+  }, [user?.id]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -57,15 +58,19 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
           productId: product.id,
           quantityMeters: qty,
           selectedColor: color,
+          userId: user.id,
         }),
       });
       const data = await res.json();
-      if (data.items) {
+      if (res.ok && data.items) {
         setCart(data.items);
         showToast(`Added ${qty}m of ${product.name} to cart!`);
+      } else {
+        showToast(data.error || 'Failed to add item to cart');
       }
     } catch (err) {
       console.error('Error adding to cart:', err);
+      showToast('Failed to connect to cart service');
     }
   };
 
@@ -86,6 +91,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
             productId: item.productId,
             quantityMeters: item.quantityMeters,
             selectedColor: item.selectedColor,
+            userId: user.id,
           }),
         });
         const data = await res.json();
@@ -104,9 +110,12 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateQuantity = async (itemId: string, quantityMeters: number) => {
     try {
       const res = await fetch(`/api/cart/items/${itemId}`, {
-        method: 'PUT',
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ quantityMeters }),
+        body: JSON.stringify({
+          quantityMeters,
+          userId: user?.id,
+        }),
       });
       const data = await res.json();
       if (data.items) setCart(data.items);
@@ -117,7 +126,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const removeFromCart = async (itemId: string) => {
     try {
-      const res = await fetch(`/api/cart/items/${itemId}`, {
+      const url = user?.id ? `/api/cart/items/${itemId}?userId=${encodeURIComponent(user.id)}` : `/api/cart/items/${itemId}`;
+      const res = await fetch(url, {
         method: 'DELETE',
       });
       const data = await res.json();
@@ -127,7 +137,13 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const clearCart = () => {
+  const clearCart = async () => {
+    try {
+      const url = user?.id ? `/api/cart?userId=${encodeURIComponent(user.id)}` : '/api/cart';
+      await fetch(url, { method: 'DELETE' });
+    } catch (err) {
+      console.error('Error clearing cart:', err);
+    }
     setCart([]);
   };
 

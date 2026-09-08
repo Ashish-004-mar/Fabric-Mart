@@ -119,7 +119,7 @@ export const Fabric3DModal: React.FC<Fabric3DModalProps> = ({ product, isOpen, o
               <div>
                 <span className="text-xs text-slate-400 uppercase font-bold tracking-wider">Wholesale Price</span>
                 <div className="text-2xl font-extrabold text-indigo-400">
-                  ${product.pricePerMeter?.toFixed(2)}{' '}
+                  ${Number(product.pricePerMeter ?? 0).toFixed(2)}{' '}
                   <span className="text-xs font-normal text-slate-400">/ meter</span>
                 </div>
               </div>
@@ -214,7 +214,7 @@ export const Fabric3DModal: React.FC<Fabric3DModalProps> = ({ product, isOpen, o
                   +
                 </button>
                 <span className="text-xs font-semibold text-indigo-300">
-                  Total: ${(meters * product.pricePerMeter).toFixed(2)}
+                  Total: ${Number((meters || 0) * (product.pricePerMeter || 0)).toFixed(2)}
                 </span>
               </div>
             </div>

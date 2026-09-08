@@ -95,7 +95,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
 
                       <div className="text-right">
                         <p className="text-xs font-bold text-slate-900 dark:text-white">
-                          ${(item.unitPrice * item.quantityMeters).toFixed(2)}
+                          ${Number((item.unitPrice ?? 0) * (item.quantityMeters ?? 0)).toFixed(2)}
                         </p>
                         <p className="text-[10px] text-slate-400">${item.unitPrice}/m</p>
                       </div>
@@ -112,19 +112,19 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onProceedToCheckout }) =
               <div className="space-y-1.5 text-xs">
                 <div className="flex justify-between text-slate-600 dark:text-slate-400">
                   <span>Fabric Subtotal</span>
-                  <span className="font-semibold text-slate-800 dark:text-slate-200">${subtotal.toFixed(2)}</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">${Number(subtotal ?? 0).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-slate-600 dark:text-slate-400">
                   <span>Est. Mill Freight (Freight/Rolls)</span>
-                  <span className="font-semibold text-slate-800 dark:text-slate-200">${estimatedShipping.toFixed(2)}</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">${Number(estimatedShipping ?? 0).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-slate-600 dark:text-slate-400">
                   <span>Est. Tax (8%)</span>
-                  <span className="font-semibold text-slate-800 dark:text-slate-200">${estimatedTax.toFixed(2)}</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">${Number(estimatedTax ?? 0).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm font-bold text-slate-900 dark:text-white pt-2 border-t border-slate-200 dark:border-slate-800">
                   <span>Estimated Total</span>
-                  <span className="text-blue-600">${grandTotal.toFixed(2)}</span>
+                  <span className="text-blue-600">${Number(grandTotal ?? 0).toFixed(2)}</span>
                 </div>
               </div>
 

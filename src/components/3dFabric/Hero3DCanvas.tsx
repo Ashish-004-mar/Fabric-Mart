@@ -37,7 +37,7 @@ export const Hero3DCanvas: React.FC<{ onExploreClick?: () => void }> = ({ onExpl
   const meshRef = useRef<THREE.Mesh | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
-  const clockRef = useRef<THREE.Clock>(new THREE.Clock());
+  const startTimeRef = useRef<number>(performance.now());
   const animFrameRef = useRef<number | null>(null);
 
   // Mouse tilt tracking
@@ -117,7 +117,7 @@ export const Hero3DCanvas: React.FC<{ onExploreClick?: () => void }> = ({ onExpl
     // Animation loop with continuous wave physics
     const animate = () => {
       animFrameRef.current = requestAnimationFrame(animate);
-      const elapsed = clockRef.current.getElapsedTime();
+      const elapsed = (performance.now() - startTimeRef.current) * 0.001;
 
       if (meshRef.current) {
         // Subtle mouse tracking rotation

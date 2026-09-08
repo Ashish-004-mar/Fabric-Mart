@@ -2,7 +2,7 @@ import React from 'react';
 import { Star } from 'lucide-react';
 
 interface StarRatingProps {
-  rating: number;
+  rating?: number;
   maxStars?: number;
   size?: 'sm' | 'md' | 'lg';
   showValue?: boolean;
@@ -12,7 +12,7 @@ interface StarRatingProps {
 }
 
 export const StarRating: React.FC<StarRatingProps> = ({
-  rating,
+  rating = 5,
   maxStars = 5,
   size = 'md',
   showValue = false,
@@ -28,7 +28,8 @@ export const StarRating: React.FC<StarRatingProps> = ({
     lg: 'w-5 h-5',
   };
 
-  const currentDisplayRating = hoverRating !== null ? hoverRating : rating;
+  const safeRating = typeof rating === 'number' && !isNaN(rating) ? rating : 0;
+  const currentDisplayRating = hoverRating !== null ? hoverRating : safeRating;
 
   return (
     <div className="inline-flex items-center gap-1.5">
@@ -66,7 +67,7 @@ export const StarRating: React.FC<StarRatingProps> = ({
 
       {showValue && (
         <span className="font-extrabold text-slate-800 dark:text-slate-100 text-xs">
-          {rating.toFixed(1)}
+          {safeRating.toFixed(1)}
         </span>
       )}
 

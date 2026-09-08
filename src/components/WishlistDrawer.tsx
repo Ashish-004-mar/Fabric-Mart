@@ -214,7 +214,7 @@ export const WishlistDrawer: React.FC<WishlistDrawerProps> = ({
                       <div className="flex items-center justify-between mt-3 pt-2 border-t border-slate-200/80 dark:border-slate-700/80">
                         <div>
                           <span className="text-xs font-black text-slate-900 dark:text-white">
-                            ${product.pricePerMeter.toFixed(2)}
+                            ${Number(product.pricePerMeter ?? 0).toFixed(2)}
                           </span>
                           <span className="text-[10px] text-slate-400 font-medium"> / meter</span>
                         </div>

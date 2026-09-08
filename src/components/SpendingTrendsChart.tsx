@@ -398,7 +398,7 @@ export const SpendingTrendsChart: React.FC<SpendingTrendsChartProps> = ({ orders
           <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block">Recent MoM Trajectory</span>
           <div className="flex items-center gap-1.5 mt-1">
             <span className={`text-xl font-black ${momGrowth < 0 ? 'text-emerald-600' : 'text-blue-600'}`}>
-              {momGrowth.toFixed(1)}%
+              {Number(momGrowth ?? 0).toFixed(1)}%
             </span>
             {momGrowth >= 0 ? (
               <TrendingUp className="w-4 h-4 text-blue-600" />
@@ -429,7 +429,7 @@ export const SpendingTrendsChart: React.FC<SpendingTrendsChartProps> = ({ orders
                 content={({ active, payload }) => {
                   if (active && payload && payload.length) {
                     const data = payload[0];
-                    const percent = ((Number(data.value) / total6MonthSpend) * 100).toFixed(1);
+                    const percent = Number(((Number(data.value || 0) / (total6MonthSpend || 1)) * 100) || 0).toFixed(1);
                     return (
                       <div className="bg-slate-900/95 text-white p-3 rounded-xl border border-slate-700 shadow-xl text-xs space-y-1">
                         <div className="flex items-center gap-2">

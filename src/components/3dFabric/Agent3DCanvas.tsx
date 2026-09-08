@@ -203,7 +203,7 @@ export const Agent3DCanvas: React.FC<Agent3DCanvasProps> = ({
     agentGroup.add(particlePoints);
 
     // ANIMATION & CANVAS RENDER LOOP
-    const clock = new THREE.Clock();
+    const startTime = performance.now();
 
     const drawVisorDisplay = (time: number, currentState: string) => {
       if (!visorCtx) return;
@@ -268,7 +268,7 @@ export const Agent3DCanvas: React.FC<Agent3DCanvasProps> = ({
 
     const animate = () => {
       animFrameId.current = requestAnimationFrame(animate);
-      const elapsedTime = clock.getElapsedTime();
+      const elapsedTime = (performance.now() - startTime) * 0.001;
 
       // State colors for lights & materials
       let activeColor = 0x38bdf8;

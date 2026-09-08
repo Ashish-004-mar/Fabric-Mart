@@ -342,7 +342,7 @@ export const CartPage: React.FC<CartPageProps> = ({
                       Est. Freight Shipping
                     </span>
                     <span className="font-bold text-slate-900 dark:text-white">
-                      {estimatedShipping === 0 ? 'FREE' : `$${estimatedShipping.toFixed(2)}`}
+                      {estimatedShipping === 0 ? 'FREE' : `$${Number(estimatedShipping ?? 0).toFixed(2)}`}
                     </span>
                   </div>
 

@@ -1,5 +1,7 @@
 import express, { Request, Response } from 'express';
+import http from 'http';
 import path from 'path';
+import fs from 'fs';
 import jwt from 'jsonwebtoken';
 import { createServer as createViteServer } from 'vite';
 import {
@@ -62,12 +64,28 @@ import {
 } from './src/db/sqliteDb';
 import { uploadImage, isCloudinaryConfigured } from './server/src/cloudinaryService';
 import { runFabricImageImportPipeline } from './scripts/importFabricImages';
+import { runAssistantChat, runAssistantGenerateDescription } from './server/src/ai/assistant.service';
+import { runVoiceAgentSupport } from './server/src/ai/voice-agent.service';
+import { transcribeAudio } from './server/src/ai/speech-to-text.service';
+import { generateSpeech } from './server/src/ai/text-to-speech.service';
+import multer from 'multer';
 
 const app = express();
 const PORT = 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'fabric-mart-admin-jwt-secret-key-2026';
 
+const UPLOADS_DIR = path.join(process.cwd(), 'uploads');
+if (!fs.existsSync(UPLOADS_DIR)) {
+  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+}
+const upload = multer({ dest: UPLOADS_DIR });
+
 app.use(express.json());
+
+// API Health Check FIRST
+app.get('/api/health', (_req: Request, res: Response) => {
+  res.json({ status: 'ok', time: new Date().toISOString() });
+});
 
 // Initialize SQLite Database with Relational Tables & Foreign Keys
 initDatabase();
@@ -794,7 +812,7 @@ app.get('/api/admin/media/stats', (req: Request, res: Response) => {
 
 // CART APIs (Relational Joined Queries)
 app.get('/api/cart', (req: Request, res: Response) => {
-  const userId = (req.query.userId as string) || 'user-buyer-1';
+  const userId = (req.query.userId as string) || 'user-buyer-2';
   const cart = getCartWithProductsJoined(userId);
   res.json(cart);
 });
@@ -806,26 +824,30 @@ app.post('/api/cart/items', (req: Request, res: Response) => {
   }
 
   try {
-    addToCartInDb(userId || 'user-buyer-1', productId, Number(quantityMeters) || 50, selectedColor);
-    const cart = getCartWithProductsJoined(userId || 'user-buyer-1');
+    const targetUserId = userId || 'user-buyer-2';
+    addToCartInDb(targetUserId, productId, Number(quantityMeters) || 50, selectedColor);
+    const cart = getCartWithProductsJoined(targetUserId);
     res.json(cart);
   } catch (err: any) {
     res.status(400).json({ error: err.message });
   }
 });
 
-app.patch('/api/cart/items/:id', (req: Request, res: Response) => {
+const handleUpdateCartQuantity = (req: Request, res: Response) => {
   const { id } = req.params;
   const { quantityMeters, userId } = req.body;
 
   updateCartQuantityInDb(id, Number(quantityMeters) || 1);
-  const cart = getCartWithProductsJoined(userId || 'user-buyer-1');
+  const cart = getCartWithProductsJoined(userId || 'user-buyer-2');
   res.json(cart);
-});
+};
+
+app.patch('/api/cart/items/:id', handleUpdateCartQuantity);
+app.put('/api/cart/items/:id', handleUpdateCartQuantity);
 
 app.delete('/api/cart/items/:id', (req: Request, res: Response) => {
   const { id } = req.params;
-  const userId = (req.query.userId as string) || 'user-buyer-1';
+  const userId = (req.query.userId as string) || 'user-buyer-2';
 
   removeFromCartInDb(id);
   const cart = getCartWithProductsJoined(userId);
@@ -833,7 +855,7 @@ app.delete('/api/cart/items/:id', (req: Request, res: Response) => {
 });
 
 app.delete('/api/cart', (req: Request, res: Response) => {
-  const userId = (req.query.userId as string) || 'user-buyer-1';
+  const userId = (req.query.userId as string) || 'user-buyer-2';
   clearCartInDb(userId);
   res.json({ items: [], subtotal: 0 });
 });
@@ -876,14 +898,6 @@ app.patch('/api/orders/:id/status', (req: Request, res: Response) => {
   }
   res.json({ order });
 });
-
-import { runAssistantChat, runAssistantGenerateDescription } from './server/src/ai/assistant.service';
-import { runVoiceAgentSupport } from './server/src/ai/voice-agent.service';
-import { transcribeAudio } from './server/src/ai/speech-to-text.service';
-import { generateSpeech } from './server/src/ai/text-to-speech.service';
-import multer from 'multer';
-
-const upload = multer({ dest: 'uploads/' });
 
 // AI ASSISTANT & INTELLIGENCE APIs (Audio-first response with catalog products)
 app.post('/api/ai/chat', async (req: Request, res: Response) => {
@@ -1001,10 +1015,9 @@ app.post('/api/ai/voice/transcribe', upload.single('audio'), async (req: Request
   try {
     const file = req.file;
     if (!file) return res.status(400).json({ error: 'No audio file uploaded' });
-    const fs = require('fs');
-    const arrayBuffer = fs.readFileSync(file.path).buffer;
-    const result = await transcribeAudio(arrayBuffer);
-    res.json({ transcript: result.transcript, text: result.transcript, modelUsed: result.modelUsed });
+    const audioBuffer = fs.readFileSync(file.path);
+    const transcript = await transcribeAudio(audioBuffer);
+    res.json({ transcript });
   } catch (err) {
     res.status(500).json({ error: 'Transcription failed' });
   }
@@ -1036,24 +1049,84 @@ app.post('/api/ai/voice/support', async (req: Request, res: Response) => {
 
 // VITE MIDDLEWARE & SERVER BOOT
 async function startServer() {
-  if (process.env.NODE_ENV !== 'production') {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: 'spa',
-    });
-    app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (_req: Request, res: Response) => {
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
-  }
+  try {
+    const server = http.createServer(app);
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-    console.log(`SQLite Relational Database initialized at /data/fabric_mart.db`);
-  });
+    let vite: any = null;
+    if (process.env.NODE_ENV !== 'production') {
+      vite = await createViteServer({
+        server: {
+          middlewareMode: true,
+          hmr: process.env.DISABLE_HMR === 'true' ? false : { server },
+        },
+        appType: 'spa',
+      });
+      app.use(vite.middlewares);
+    } else {
+      const distPath = path.join(process.cwd(), 'dist');
+      app.use(express.static(distPath));
+      app.get('*', (_req: Request, res: Response) => {
+        res.sendFile(path.join(distPath, 'index.html'));
+      });
+    }
+
+    await new Promise<void>((resolve, reject) => {
+      let retries = 0;
+      const maxRetries = 15;
+      const tryListen = () => {
+        server.listen(PORT, '0.0.0.0');
+      };
+
+      server.once('listening', () => {
+        console.log(`Server running on http://localhost:${PORT}`);
+        console.log(`SQLite Relational Database initialized at /data/fabric_mart.db`);
+        resolve();
+      });
+
+      server.on('error', (err: any) => {
+        if (err.code === 'EADDRINUSE' && retries < maxRetries) {
+          retries++;
+          console.warn(`[server] Port ${PORT} occupied, retrying in 400ms... (attempt ${retries}/${maxRetries})`);
+          setTimeout(tryListen, 400);
+        } else {
+          console.error('[server] Fatal server error:', err);
+          reject(err);
+        }
+      });
+
+      tryListen();
+    });
+
+    const shutdown = async () => {
+      try {
+        if (vite) {
+          try { await vite.close(); } catch (_) {}
+        }
+        if (typeof (server as any).closeAllConnections === 'function') {
+          (server as any).closeAllConnections();
+        }
+        server.close(() => {
+          process.exit(0);
+        });
+        setTimeout(() => process.exit(0), 1000).unref();
+      } catch (_) {
+        process.exit(0);
+      }
+    };
+    process.on('SIGTERM', shutdown);
+    process.on('SIGINT', shutdown);
+  } catch (err) {
+    console.error('Failed to start server:', err);
+    process.exit(1);
+  }
 }
+
+process.on('uncaughtException', (err) => {
+  console.error('[server] Uncaught exception:', err);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('[server] Unhandled rejection:', reason);
+});
 
 startServer();

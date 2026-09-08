@@ -30,8 +30,7 @@ export interface SyncImageResult {
  * Fetches high-quality textile images from Pexels API based on search keywords
  */
 export async function fetchPexelsTextileImages(query: string, count: number = 5): Promise<Array<{ id: number; url: string; photographer: string }>> {
-  const viteEnv = typeof import.meta !== 'undefined' && (import.meta as any).env ? (import.meta as any).env : {};
-  const apiKey = process.env.PEXELS_API_KEY || viteEnv.VITE_PEXELS_API_KEY;
+  const apiKey = process.env.PEXELS_API_KEY || (import.meta as any).env?.VITE_PEXELS_API_KEY;
 
   if (!apiKey) {
     console.warn('[TextileImageService] PEXELS_API_KEY not found. Returning curated fallback textile image set.');
@@ -79,9 +78,8 @@ export async function fetchPexelsTextileImages(query: string, count: number = 5)
  * Optimizes & uploads a textile image URL to Cloudinary
  */
 export async function uploadImageToCloudinary(imageUrl: string, folder = 'fabric_mart_catalog'): Promise<string> {
-  const viteEnv = typeof import.meta !== 'undefined' && (import.meta as any).env ? (import.meta as any).env : {};
-  const cloudName = process.env.CLOUDINARY_CLOUD_NAME || viteEnv.VITE_CLOUDINARY_CLOUD_NAME;
-  const apiKey = process.env.CLOUDINARY_API_KEY || viteEnv.VITE_CLOUDINARY_API_KEY;
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME || (import.meta as any).env?.VITE_CLOUDINARY_CLOUD_NAME;
+  const apiKey = process.env.CLOUDINARY_API_KEY || (import.meta as any).env?.VITE_CLOUDINARY_API_KEY;
 
   if (!cloudName) {
     // Return Cloudinary auto-format optimized CDN proxy format or direct high-res URL

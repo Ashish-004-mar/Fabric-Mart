@@ -247,7 +247,6 @@ export const FabricMartCopilotModal: React.FC<FabricMartCopilotModalProps> = ({
     stopListening,
     toggleListening,
   } = useVoiceInput({
-    silenceTimeoutMs: 5000,
     onTranscript: (text) => setInputMessage(text),
     onFinalTranscript: (finalText) => {
       if (finalText && finalText.trim()) {
@@ -349,7 +348,14 @@ export const FabricMartCopilotModal: React.FC<FabricMartCopilotModalProps> = ({
 
   // Manage audio & voice state whenever modal opens or closes
   useEffect(() => {
-    if (!isOpen) {
+    if (isOpen) {
+      if (messages.length > 0) {
+        const lastMsg = messages[messages.length - 1];
+        if (lastMsg.sender === 'assistant' && !voiceMuted) {
+          speakText(lastMsg.shortAudioAnswer || lastMsg.text, lastMsg.id);
+        }
+      }
+    } else {
       stopSpeaking();
       stopListening();
     }
