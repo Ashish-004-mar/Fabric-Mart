@@ -95,6 +95,13 @@ export async function runFabricImageImportPipeline(targetProductId?: string) {
 }
 
 // Allow CLI execution if called directly
-if (import.meta.url.endsWith(process.argv[1]) || process.argv[1]?.endsWith('importFabricImages.ts')) {
+const isDirectCli = typeof process !== 'undefined' && Boolean(
+  process.argv[1] && (
+    process.argv[1].endsWith('importFabricImages.ts') ||
+    process.argv[1].endsWith('importFabricImages.js')
+  )
+);
+
+if (isDirectCli) {
   runFabricImageImportPipeline().catch(console.error);
 }
