@@ -44,27 +44,15 @@ FabricMart is a next-generation B2B textile sourcing and fabric discovery platfo
    git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
    git push -u origin main
    ```
-2. **Import to Vercel**:
-   - Go to [vercel.com](https://vercel.com) and log in with your GitHub account.
-   - Click **Add New** > **Project** and select your repository.
-3. **Configure Environment Variables**:
-   - Under **Environment Variables**, add:
-     - `HuggingFace_API_KEY`: *(Your HuggingFace API key)*
-4. **Deploy**:
-   - Click **Deploy**. Vercel will automatically build and deploy your application with a free `.vercel.app` domain.
 
----
-
-### Option 4: Render (Free Web Service)
-
-1. Go to [render.com](https://render.com) and create a free account.
-2. Click **New +** > **Web Service** and connect your GitHub repository.
-3. Set the runtime parameters:
+2. Go to [render.com](https://render.com) and create a free account.
+3. Click **New +** > **Web Service** and connect your GitHub repository.
+4. Set the runtime parameters:
    - **Environment**: `Node`
    - **Build Command**: `npm run build`
    - **Start Command**: `npm run start`
-4. In the **Environment Variables** section, add your secret key (`GEMINI_API_KEY`).
-5. Click **Create Web Service** to launch your free deployment.
+5. In the **Environment Variables** section, add your secret key (`HuggingFace_API_KEY`).
+6. Click **Create Web Service** to launch your free deployment.
 
 ---
 
