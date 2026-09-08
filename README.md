@@ -34,19 +34,7 @@ FabricMart is a next-generation B2B textile sourcing and fabric discovery platfo
 
 ## 🚀 Free Deployment Guide
 
-You can deploy FabricMart for **free** using any of the following popular cloud platforms:
 
----
-
-### Option 1: AI Studio Built-in Deployment (Easiest & Free)
-
-1. **Deploy directly from the Editor**:
-   - Click the **Deploy** or **Share** button in the top-right corner of the AI Studio interface.
-   - Select Cloud Run deployment to publish a live, containerized web URL.
-
----
-
-### Option 2: Vercel (Free Client-Side / Full-Stack Hosting)
 
 1. **Push your code to GitHub**:
    ```bash
@@ -61,25 +49,9 @@ You can deploy FabricMart for **free** using any of the following popular cloud 
    - Click **Add New** > **Project** and select your repository.
 3. **Configure Environment Variables**:
    - Under **Environment Variables**, add:
-     - `GEMINI_API_KEY`: *(Your Google AI Studio API key)*
+     - `HuggingFace_API_KEY`: *(Your HuggingFace API key)*
 4. **Deploy**:
    - Click **Deploy**. Vercel will automatically build and deploy your application with a free `.vercel.app` domain.
-
----
-
-### Option 3: Netlify (Free Hosting)
-
-1. **Log in to Netlify**:
-   - Go to [netlify.com](https://netlify.com) and connect your GitHub account.
-2. **Add New Site**:
-   - Select **Import an existing project** from GitHub.
-3. **Build Settings**:
-   - **Build Command**: `npm run build`
-   - **Publish Directory**: `dist`
-4. **Environment Variables**:
-   - Add `GEMINI_API_KEY` in Netlify's Site Settings > Environment Variables.
-5. **Deploy**:
-   - Click **Deploy Site**.
 
 ---
 
@@ -112,7 +84,7 @@ You can deploy FabricMart for **free** using any of the following popular cloud 
 3. **Configure Environment Variables**:
    Create a `.env` file in the root directory:
    ```env
-   GEMINI_API_KEY=your_gemini_api_key_here
+   HuggingFace_API_KEY=your_HuggingFace_api_key_here
    ```
 
 4. **Start the development server**:
